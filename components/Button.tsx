@@ -52,33 +52,45 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 54,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   primary: {
     backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.3,
   },
   secondary: {
     backgroundColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOpacity: 0.3,
   },
   danger: {
     backgroundColor: '#EF4444',
+    shadowColor: '#EF4444',
+    shadowOpacity: 0.3,
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#2563EB',
+    shadowOpacity: 0,
   },
   disabled: {
     opacity: 0.5,
   },
   text: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   primaryText: {
     color: '#FFFFFF',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MapPin, Navigation, DollarSign } from 'lucide-react-native';
+import { MapPin, Navigation, DollarSign, Clock } from 'lucide-react-native';
 import type { Trip } from '../types';
 
 interface TripCardProps {
@@ -20,43 +20,72 @@ export const TripCard: React.FC<TripCardProps> = ({
   onEnd,
   showActions = true,
 }) => {
+  const getStatusColor = () => {
+    switch (trip.status) {
+      case 'pending': return { bg: '#FEF3C7', text: '#F59E0B' };
+      case 'accepted': return { bg: '#DBEAFE', text: '#2563EB' };
+      case 'in_progress': return { bg: '#D1FAE5', text: '#10B981' };
+      default: return { bg: '#E5E7EB', text: '#6B7280' };
+    }
+  };
+
+  const statusColor = getStatusColor();
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.serviceType}>{trip.service_type}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{trip.status.toUpperCase()}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.serviceType}>{trip.service_type}</Text>
+          {trip.status === 'pending' && (
+            <View style={styles.timeInfo}>
+              <Clock size={12} color="#9CA3AF" />
+              <Text style={styles.timeText}>Just now</Text>
+            </View>
+          )}
+        </View>
+        <View style={[styles.badge, { backgroundColor: statusColor.bg }]}>
+          <Text style={[styles.badgeText, { color: statusColor.text }]}>
+            {trip.status.replace('_', ' ').toUpperCase()}
+          </Text>
         </View>
       </View>
 
       <View style={styles.locationContainer}>
         <View style={styles.locationRow}>
-          <MapPin size={20} color="#10B981" />
+          <View style={styles.pickupIconContainer}>
+            <MapPin size={18} color="#10B981" />
+          </View>
           <View style={styles.locationText}>
             <Text style={styles.locationLabel}>Pickup</Text>
-            <Text style={styles.locationAddress}>{trip.pickup_location}</Text>
+            <Text style={styles.locationAddress} numberOfLines={1}>
+              {trip.pickup_location}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.locationDivider} />
+        <View style={styles.routeLine} />
 
         <View style={styles.locationRow}>
-          <MapPin size={20} color="#EF4444" />
+          <View style={styles.dropoffIconContainer}>
+            <MapPin size={18} color="#EF4444" />
+          </View>
           <View style={styles.locationText}>
             <Text style={styles.locationLabel}>Drop-off</Text>
-            <Text style={styles.locationAddress}>{trip.dropoff_location}</Text>
+            <Text style={styles.locationAddress} numberOfLines={1}>
+              {trip.dropoff_location}
+            </Text>
           </View>
         </View>
       </View>
 
       <View style={styles.detailsRow}>
-        <View style={styles.detail}>
-          <Navigation size={16} color="#6B7280" />
+        <View style={styles.detailCard}>
+          <Navigation size={16} color="#2563EB" />
           <Text style={styles.detailText}>{trip.distance.toFixed(1)} km</Text>
         </View>
-        <View style={styles.detail}>
-          <DollarSign size={16} color="#6B7280" />
-          <Text style={styles.detailText}>₹{trip.estimated_fare}</Text>
+        <View style={[styles.detailCard, styles.fareCard]}>
+          <DollarSign size={16} color="#10B981" />
+          <Text style={[styles.detailText, styles.fareText]}>₹{trip.estimated_fare}</Text>
         </View>
       </View>
 
@@ -101,78 +130,125 @@ export const TripCard: React.FC<TripCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
+  headerLeft: {
+    flex: 1,
+  },
   serviceType: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  timeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   badge: {
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2563EB',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   locationContainer: {
     marginBottom: 16,
   },
   locationRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+  },
+  pickupIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropoffIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   locationText: {
     flex: 1,
     marginLeft: 12,
   },
   locationLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 2,
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginBottom: 4,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   locationAddress: {
     fontSize: 14,
-    color: '#1F2937',
-    fontWeight: '500',
+    color: '#111827',
+    fontWeight: '600',
   },
-  locationDivider: {
-    height: 1,
+  routeLine: {
+    width: 2,
+    height: 20,
     backgroundColor: '#E5E7EB',
-    marginVertical: 8,
+    marginLeft: 17,
+    marginVertical: 6,
   },
   detailsRow: {
     flexDirection: 'row',
-    gap: 24,
+    gap: 10,
     marginBottom: 16,
   },
-  detail: {
+  detailCard: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  fareCard: {
+    backgroundColor: '#D1FAE5',
   },
   detailText: {
     fontSize: 14,
     color: '#4B5563',
-    fontWeight: '500',
+    fontWeight: '700',
+  },
+  fareText: {
+    color: '#10B981',
   },
   actions: {
     flexDirection: 'row',
@@ -186,10 +262,15 @@ const styles = StyleSheet.create({
   },
   acceptButton: {
     backgroundColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   acceptButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 15,
   },
   rejectButton: {
@@ -202,24 +283,34 @@ const styles = StyleSheet.create({
   },
   startButton: {
     backgroundColor: '#2563EB',
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   startButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
+    fontWeight: '700',
+    fontSize: 16,
   },
   endButton: {
-    backgroundColor: '#EF4444',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: '#10B981',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   endButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
+    fontWeight: '700',
+    fontSize: 16,
   },
 });

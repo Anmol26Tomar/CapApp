@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Hop as Home, DollarSign, User } from 'lucide-react-native';
+import { Home, DollarSign, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -10,15 +10,23 @@ export default function TabLayout() {
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          borderTopWidth: 0,
+          height: 70,
+          paddingBottom: 12,
+          paddingTop: 12,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
+          fontSize: 11,
+          fontWeight: '700',
+          marginTop: 4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
       }}
     >

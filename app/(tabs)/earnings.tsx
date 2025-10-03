@@ -7,20 +7,17 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { DollarSign, TrendingUp, Calendar } from 'lucide-react-native';
+import { DollarSign, TrendingUp, Calendar, ArrowUpRight } from 'lucide-react-native';
 import { earningsService } from '../../services/api';
 import type { Earning, EarningSummary } from '../../types';
+import { useDummyData } from '../../services/dummyData';
 
 export default function EarningsScreen() {
-  const [summary, setSummary] = useState<EarningSummary>({
-    today: 0,
-    week: 0,
-    month: 0,
-    total: 0,
-  });
-  const [earnings, setEarnings] = useState<Earning[]>([]);
+  const dummyData = useDummyData();
+  const [summary, setSummary] = useState<EarningSummary>(dummyData.earningSummary);
+  const [earnings, setEarnings] = useState<Earning[]>(dummyData.earnings);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month'>('week');
 
   const fetchEarnings = async () => {
@@ -32,7 +29,9 @@ export default function EarningsScreen() {
       setSummary(summaryData);
       setEarnings(earningsData);
     } catch (error) {
-      console.error('Error fetching earnings:', error);
+      console.log('Using dummy data');
+      setSummary(dummyData.earningSummary);
+      setEarnings(dummyData.earnings);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,10 +71,22 @@ export default function EarningsScreen() {
     );
   }
 
+  const getTodayChange = () => {
+    const yesterday = summary.week - summary.today;
+    const change = summary.today - (yesterday / 7);
+    const percentage = ((change / (yesterday / 7)) * 100).toFixed(1);
+    return { change, percentage };
+  };
+
+  const todayChange = getTodayChange();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Earnings</Text>
+        <View>
+          <Text style={styles.headerTitle}>Earnings</Text>
+          <Text style={styles.headerSubtitle}>Track your income</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -87,26 +98,44 @@ export default function EarningsScreen() {
         <View style={styles.summarySection}>
           <View style={styles.mainCard}>
             <View style={styles.mainCardHeader}>
-              <TrendingUp size={24} color="#10B981" />
-              <Text style={styles.mainCardLabel}>Total Earnings</Text>
+              <View style={styles.mainCardIconContainer}>
+                <TrendingUp size={24} color="#10B981" />
+              </View>
+              <View style={styles.mainCardTitleContainer}>
+                <Text style={styles.mainCardLabel}>Total Earnings</Text>
+                <View style={styles.changeIndicator}>
+                  <ArrowUpRight size={14} color="#10B981" />
+                  <Text style={styles.changeText}>+{todayChange.percentage}%</Text>
+                </View>
+              </View>
             </View>
             <Text style={styles.mainCardAmount}>{formatCurrency(summary.total)}</Text>
+            <Text style={styles.mainCardSubtext}>Lifetime earnings across all trips</Text>
           </View>
 
           <View style={styles.summaryGrid}>
-            <View style={styles.summaryCard}>
+            <View style={[styles.summaryCard, styles.summaryCardToday]}>
+              <View style={styles.summaryCardIcon}>
+                <DollarSign size={18} color="#2563EB" />
+              </View>
               <Text style={styles.summaryCardLabel}>Today</Text>
-              <Text style={styles.summaryCardAmount}>
+              <Text style={[styles.summaryCardAmount, { color: '#2563EB' }]}>
                 {formatCurrency(summary.today)}
               </Text>
             </View>
             <View style={styles.summaryCard}>
+              <View style={styles.summaryCardIcon}>
+                <Calendar size={18} color="#6B7280" />
+              </View>
               <Text style={styles.summaryCardLabel}>This Week</Text>
               <Text style={styles.summaryCardAmount}>
                 {formatCurrency(summary.week)}
               </Text>
             </View>
             <View style={styles.summaryCard}>
+              <View style={styles.summaryCardIcon}>
+                <Calendar size={18} color="#6B7280" />
+              </View>
               <Text style={styles.summaryCardLabel}>This Month</Text>
               <Text style={styles.summaryCardAmount}>
                 {formatCurrency(summary.month)}
@@ -151,7 +180,10 @@ export default function EarningsScreen() {
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Transaction History</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Transaction History</Text>
+            <Text style={styles.transactionCount}>{earnings.length} transactions</Text>
+          </View>
           {earnings.length === 0 ? (
             <View style={styles.emptyState}>
               <DollarSign size={48} color="#D1D5DB" />
@@ -161,13 +193,13 @@ export default function EarningsScreen() {
               </Text>
             </View>
           ) : (
-            earnings.map((earning) => (
+            earnings.map((earning, index) => (
               <View key={earning.id} style={styles.earningCard}>
                 <View style={styles.earningLeft}>
                   <View style={styles.iconContainer}>
                     <DollarSign size={20} color="#10B981" />
                   </View>
-                  <View>
+                  <View style={styles.earningInfo}>
                     <Text style={styles.earningTitle}>Trip Payment</Text>
                     <View style={styles.earningMeta}>
                       <Calendar size={12} color="#9CA3AF" />
@@ -177,9 +209,16 @@ export default function EarningsScreen() {
                     </View>
                   </View>
                 </View>
-                <Text style={styles.earningAmount}>
-                  {formatCurrency(earning.amount)}
-                </Text>
+                <View style={styles.earningRight}>
+                  <Text style={styles.earningAmount}>
+                    {formatCurrency(earning.amount)}
+                  </Text>
+                  {index === 0 && (
+                    <View style={styles.newBadge}>
+                      <Text style={styles.newBadgeText}>New</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             ))
           )}
@@ -192,29 +231,40 @@ export default function EarningsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F7FA',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F7FA',
   },
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+    fontWeight: '500',
   },
   header: {
     backgroundColor: '#FFFFFF',
     padding: 20,
     paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,
@@ -224,30 +274,58 @@ const styles = StyleSheet.create({
   },
   mainCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 24,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 5,
   },
   mainCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 12,
+    marginBottom: 16,
+  },
+  mainCardIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mainCardTitleContainer: {
+    flex: 1,
   },
   mainCardLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  changeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  changeText: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '600',
   },
   mainCardAmount: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
+    letterSpacing: -1,
+  },
+  mainCardSubtext: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 8,
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -256,23 +334,39 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    alignItems: 'center',
   },
-  summaryCardLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+  summaryCardToday: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 2,
+    borderColor: '#BFDBFE',
+  },
+  summaryCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 8,
   },
+  summaryCardLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
   summaryCardAmount: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
   },
   filterSection: {
     flexDirection: 'row',
@@ -305,43 +399,58 @@ const styles = StyleSheet.create({
   historySection: {
     padding: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 12,
+    color: '#111827',
+    letterSpacing: -0.5,
+  },
+  transactionCount: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
   },
   earningCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   earningLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#D1FAE5',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  earningInfo: {
+    flex: 1,
+  },
   earningTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#111827',
     marginBottom: 4,
   },
   earningMeta: {
@@ -352,25 +461,49 @@ const styles = StyleSheet.create({
   earningDate: {
     fontSize: 12,
     color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  earningRight: {
+    alignItems: 'flex-end',
   },
   earningAmount: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#10B981',
   },
+  newBadge: {
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  newBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
   emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 48,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#111827',
     marginTop: 16,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
     color: '#6B7280',
+    textAlign: 'center',
   },
 });

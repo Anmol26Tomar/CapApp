@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
+  Animated,
 } from 'react-native';
 import { TripCard } from '../../components/TripCard';
 import { Modal } from '../../components/Modal';
@@ -17,14 +18,16 @@ import { Button } from '../../components/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { tripService } from '../../services/api';
 import type { Trip } from '../../types';
-import { Navigation } from 'lucide-react-native';
+import { Navigation, Zap, Clock } from 'lucide-react-native';
+import { useDummyData } from '../../services/dummyData';
 
 export default function HomeScreen() {
   const { captain } = useAuth();
-  const [pendingTrips, setPendingTrips] = useState<Trip[]>([]);
-  const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
+  const dummyData = useDummyData();
+  const [pendingTrips, setPendingTrips] = useState<Trip[]>(dummyData.pendingTrips);
+  const [activeTrip, setActiveTrip] = useState<Trip | null>(dummyData.activeTrip);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [otpModalVisible, setOtpModalVisible] = useState(false);
@@ -32,6 +35,7 @@ export default function HomeScreen() {
   const [cancelReason, setCancelReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [tripOtp, setTripOtp] = useState('');
+  const pulseAnim = useState(new Animated.Value(1))[0];
 
   const getServiceCategories = () => {
     if (!captain) return [];
@@ -54,6 +58,23 @@ export default function HomeScreen() {
     return [];
   };
 
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.2,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
   const fetchTrips = async () => {
     try {
       const [pending, active] = await Promise.all([
@@ -63,7 +84,9 @@ export default function HomeScreen() {
       setPendingTrips(pending);
       setActiveTrip(active);
     } catch (error: any) {
-      console.error('Error fetching trips:', error);
+      console.log('Using dummy data');
+      setPendingTrips(dummyData.pendingTrips);
+      setActiveTrip(dummyData.activeTrip);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -181,29 +204,48 @@ export default function HomeScreen() {
     );
   }
 
+  const displayCaptain = captain || dummyData.captain;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {captain?.full_name}</Text>
-          <Text style={styles.serviceInfo}>
-            {captain?.vehicle_type?.toUpperCase()} • {captain?.service_scope?.replace('_', ' ').toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.stats}>
-          <Text style={styles.rating}>⭐ {captain?.rating.toFixed(1)}</Text>
-          <Text style={styles.trips}>{captain?.total_trips} trips</Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.greeting}>Hello, {displayCaptain?.full_name.split(' ')[0]} 👋</Text>
+            <Text style={styles.serviceInfo}>
+              {displayCaptain?.vehicle_type?.toUpperCase()} • {displayCaptain?.service_scope?.replace('_', ' ').toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.statsContainer}>
+            <View style={styles.statBadge}>
+              <Text style={styles.statValue}>⭐ {displayCaptain?.rating.toFixed(1)}</Text>
+            </View>
+            <View style={styles.statBadge}>
+              <Text style={styles.statValue}>{displayCaptain?.total_trips}</Text>
+              <Text style={styles.statLabel}>trips</Text>
+            </View>
+          </View>
         </View>
       </View>
 
-      <View style={styles.categories}>
-        <Text style={styles.categoriesTitle}>Your Service Categories</Text>
-        <View style={styles.categoryList}>
-          {getServiceCategories().map((category, index) => (
-            <View key={index} style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{category}</Text>
-            </View>
-          ))}
+      <View style={styles.quickStats}>
+        <View style={styles.quickStatCard}>
+          <View style={styles.quickStatIcon}>
+            <Zap size={20} color="#10B981" />
+          </View>
+          <View>
+            <Text style={styles.quickStatValue}>{pendingTrips.length}</Text>
+            <Text style={styles.quickStatLabel}>New Requests</Text>
+          </View>
+        </View>
+        <View style={styles.quickStatCard}>
+          <View style={[styles.quickStatIcon, { backgroundColor: '#DBEAFE' }]}>
+            <Clock size={20} color="#2563EB" />
+          </View>
+          <View>
+            <Text style={styles.quickStatValue}>{activeTrip ? '1' : '0'}</Text>
+            <Text style={styles.quickStatLabel}>Active Trip</Text>
+          </View>
         </View>
       </View>
 
@@ -215,7 +257,15 @@ export default function HomeScreen() {
       >
         {activeTrip && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Active Trip</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Trip</Text>
+              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                <View style={styles.liveBadge}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                </View>
+              </Animated.View>
+            </View>
             <TripCard
               trip={activeTrip}
               onStart={handleStartTrip}
@@ -242,14 +292,22 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Incoming Requests ({pendingTrips.length})
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Incoming Requests</Text>
+            {pendingTrips.length > 0 && (
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>{pendingTrips.length}</Text>
+              </View>
+            )}
+          </View>
           {pendingTrips.length === 0 ? (
             <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <Navigation size={48} color="#D1D5DB" />
+              </View>
               <Text style={styles.emptyText}>No pending requests</Text>
               <Text style={styles.emptySubtext}>
-                New requests will appear here
+                New trip requests will appear here
               </Text>
             </View>
           ) : (
@@ -327,78 +385,106 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F7FA',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F7FA',
   },
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+    fontWeight: '500',
   },
   header: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 60,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
+    marginBottom: 4,
   },
   serviceInfo: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6B7280',
-    marginTop: 4,
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
-  stats: {
-    alignItems: 'flex-end',
-  },
-  rating: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  trips: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  categories: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  categoriesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  categoryList: {
+  statsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
-  categoryBadge: {
-    backgroundColor: '#DBEAFE',
+  statBadge: {
+    backgroundColor: '#F3F4F6',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 60,
   },
-  categoryText: {
+  statValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  statLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  quickStats: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  quickStatCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  quickStatIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickStatValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  quickStatLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#2563EB',
+    color: '#6B7280',
+    marginTop: 2,
   },
   scrollView: {
     flex: 1,
@@ -406,11 +492,51 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 12,
+    color: '#111827',
+    letterSpacing: -0.5,
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EF4444',
+  },
+  liveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#EF4444',
+    letterSpacing: 0.5,
+  },
+  countBadge: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  countBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   tripActions: {
     marginTop: 12,
@@ -421,31 +547,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     gap: 8,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   navigateButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
+    fontWeight: '700',
+    fontSize: 16,
   },
   cancelButton: {
     width: '100%',
   },
   emptyState: {
-    padding: 32,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 48,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
+    color: '#111827',
+    marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
     color: '#6B7280',
+    textAlign: 'center',
   },
   otpInstruction: {
     fontSize: 14,

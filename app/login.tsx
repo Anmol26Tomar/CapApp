@@ -67,6 +67,9 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logo}>🚕</Text>
+          </View>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue as a captain</Text>
         </View>
@@ -118,7 +121,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F7FA',
   },
   scrollContent: {
     flexGrow: 1,
@@ -126,32 +129,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  logo: {
+    fontSize: 48,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#6B7280',
+    fontWeight: '500',
   },
   form: {
     width: '100%',
   },
   loginButton: {
-    marginTop: 8,
+    marginTop: 16,
   },
   footer: {
-    marginTop: 24,
+    marginTop: 32,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 12,
+    fontWeight: '500',
   },
   signupButton: {
     width: '100%',

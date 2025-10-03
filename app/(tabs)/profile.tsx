@@ -18,6 +18,8 @@ import {
   LogOut,
   Truck,
   Settings,
+  Shield,
+  Award,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,13 +27,16 @@ import { captainService } from '../../services/api';
 import { Modal } from '../../components/Modal';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import { useDummyData } from '../../services/dummyData';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { captain, logout, refreshProfile } = useAuth();
-  const [isAvailable, setIsAvailable] = useState(captain?.is_available || false);
+  const dummyData = useDummyData();
+  const displayCaptain = captain || dummyData.captain;
+  const [isAvailable, setIsAvailable] = useState(displayCaptain?.is_available || false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [city, setCity] = useState(captain?.city || '');
+  const [city, setCity] = useState(displayCaptain?.city || '');
   const [updating, setUpdating] = useState(false);
 
   const handleToggleAvailability = async (value: boolean) => {
@@ -135,21 +140,25 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerSubtitle}>Manage your account</Text>
       </View>
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <User size={40} color="#FFFFFF" />
+              <User size={48} color="#FFFFFF" />
+            </View>
+            <View style={styles.verifiedBadge}>
+              <Shield size={16} color="#10B981" />
             </View>
           </View>
-          <Text style={styles.name}>{captain?.full_name}</Text>
+          <Text style={styles.name}>{displayCaptain?.full_name}</Text>
           <View style={styles.vehicleBadge}>
             <Truck size={14} color="#2563EB" />
             <Text style={styles.vehicleText}>
-              {captain?.vehicle_type?.toUpperCase()} •{' '}
-              {captain?.service_scope?.replace('_', ' ').toUpperCase()}
+              {displayCaptain?.vehicle_type?.toUpperCase()} •{' '}
+              {displayCaptain?.service_scope?.replace('_', ' ').toUpperCase()}
             </Text>
           </View>
         </View>
@@ -158,14 +167,20 @@ export default function ProfileScreen() {
           <StatCard
             icon={Star}
             label="Rating"
-            value={captain?.rating.toFixed(1) || '0.0'}
+            value={displayCaptain?.rating.toFixed(1) || '0.0'}
             color="#F59E0B"
           />
           <StatCard
             icon={TrendingUp}
             label="Total Trips"
-            value={captain?.total_trips.toString() || '0'}
+            value={displayCaptain?.total_trips.toString() || '0'}
             color="#10B981"
+          />
+          <StatCard
+            icon={Award}
+            label="Experience"
+            value="2Y"
+            color="#8B5CF6"
           />
         </View>
 
@@ -189,12 +204,12 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={styles.infoContainer}>
-            <InfoRow icon={Phone} label="Phone" value={captain?.phone || ''} />
-            <InfoRow icon={Mail} label="Email" value={captain?.email || ''} />
+            <InfoRow icon={Phone} label="Phone" value={displayCaptain?.phone || ''} />
+            <InfoRow icon={Mail} label="Email" value={displayCaptain?.email || ''} />
             <InfoRow
               icon={MapPin}
               label="City"
-              value={captain?.city || 'Not set'}
+              value={displayCaptain?.city || 'Not set'}
               onEdit={() => setEditModalVisible(true)}
             />
           </View>
@@ -237,19 +252,29 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F7FA',
   },
   header: {
     backgroundColor: '#FFFFFF',
     padding: 20,
     paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,
@@ -257,31 +282,57 @@ const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    padding: 24,
+    padding: 32,
     marginTop: 16,
     marginHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 5,
   },
   avatarContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
+    position: 'relative',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   name: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
     marginBottom: 8,
   },
   vehicleBadge: {
@@ -289,14 +340,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   vehicleText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2563EB',
+    letterSpacing: 0.5,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -307,14 +359,14 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   statIconContainer: {
     width: 48,
@@ -325,36 +377,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
+    fontWeight: '600',
   },
   section: {
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111827',
     marginBottom: 12,
+    letterSpacing: -0.5,
   },
   availabilityRow: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   availabilityTitle: {
     fontSize: 16,
@@ -368,13 +422,13 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   infoRow: {
     flexDirection: 'row',
@@ -391,9 +445,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -406,24 +460,26 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#111827',
   },
   editButton: {
     padding: 8,
   },
   logoutButton: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
   },
   logoutText: {
     fontSize: 16,
