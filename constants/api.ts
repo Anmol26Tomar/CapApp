@@ -1,5 +1,8 @@
 export const API_BASE_URL = 'https://api.example.com';
 
+// Toggle this to true to use built-in dummy data without a backend
+export const USE_MOCK_API = true;
+
 export const API_ENDPOINTS = {
   LOGIN: '/auth/login',
   SIGNUP: '/auth/signup',
