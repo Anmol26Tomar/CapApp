@@ -1,0 +1,24 @@
+export const API_BASE_URL = 'https://api.example.com';
+
+export const API_ENDPOINTS = {
+  LOGIN: '/auth/login',
+  SIGNUP: '/auth/signup',
+  VERIFY_OTP: '/auth/verify-otp',
+  RESEND_OTP: '/auth/resend-otp',
+  LOGOUT: '/auth/logout',
+
+  GET_CAPTAIN_PROFILE: '/captain/profile',
+  UPDATE_CAPTAIN_PROFILE: '/captain/profile',
+  UPDATE_AVAILABILITY: '/captain/availability',
+
+  GET_PENDING_REQUESTS: '/trips/pending',
+  GET_ACTIVE_TRIP: '/trips/active',
+  ACCEPT_TRIP: '/trips/accept',
+  REJECT_TRIP: '/trips/reject',
+  START_TRIP: '/trips/start',
+  END_TRIP: '/trips/end',
+  CANCEL_TRIP: '/trips/cancel',
+
+  GET_EARNINGS: '/earnings',
+  GET_EARNINGS_SUMMARY: '/earnings/summary',
+};
