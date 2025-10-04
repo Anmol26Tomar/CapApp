@@ -72,6 +72,7 @@ export default function SignupScreen() {
         vehicle_type: vehicleType,
         service_scope: serviceScope,
         city: formData.city,
+        confirm_Password:formData.confirmPassword
       });
       router.push({
         pathname: '/verify-otp',

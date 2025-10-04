@@ -64,6 +64,7 @@ export interface SignupData {
   password: string;
   vehicle_type: VehicleType;
   service_scope: ServiceScope;
+  confirm_Password:string;
   city: string;
 }
 
