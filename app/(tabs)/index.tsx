@@ -15,6 +15,7 @@ import { TripCard } from '../../components/TripCard';
 import { Modal } from '../../components/Modal';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import { OrderDetailsInput } from '../../components/OrderDetailsInput';
 import { useAuth } from '../../contexts/AuthContext';
 import { tripService } from '../../services/api';
 import type { Trip } from '../../types';
@@ -31,10 +32,14 @@ export default function HomeScreen() {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [otpModalVisible, setOtpModalVisible] = useState(false);
+  const [pickupOtpModalVisible, setPickupOtpModalVisible] = useState(false);
+  const [orderDetailsModalVisible, setOrderDetailsModalVisible] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string>('');
   const [cancelReason, setCancelReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [tripOtp, setTripOtp] = useState('');
+  const [pickupOtp, setPickupOtp] = useState('');
+  const [tempOrderDetails, setTempOrderDetails] = useState({});
   const pulseAnim = useState(new Animated.Value(1))[0];
 
   const getServiceCategories = () => {
@@ -132,11 +137,45 @@ export default function HomeScreen() {
     }
   };
 
-  const handleStartTrip = async (tripId: string) => {
+  const handleReachedPickup = async () => {
+    if (!activeTrip) return;
     try {
-      const trip = await tripService.startTrip(tripId);
-      setActiveTrip(trip);
-      openMaps(trip.pickup_lat, trip.pickup_lng);
+      const updatedTrip = { ...activeTrip, status: 'reached_pickup' as const };
+      setActiveTrip(updatedTrip);
+      Alert.alert('Success', 'Customer notified of your arrival');
+      setPickupOtpModalVisible(true);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to update status');
+    }
+  };
+
+  const handleVerifyPickupOtp = async () => {
+    if (!pickupOtp.trim() || pickupOtp.length !== 4) {
+      Alert.alert('Error', 'Please enter a valid 4-digit pickup OTP');
+      return;
+    }
+
+    try {
+      if (activeTrip && activeTrip.pickup_otp === pickupOtp) {
+        setPickupOtpModalVisible(false);
+        setOrderDetailsModalVisible(true);
+        setPickupOtp('');
+      } else {
+        Alert.alert('Error', 'Invalid pickup OTP');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to verify OTP');
+    }
+  };
+
+  const handleStartTrip = async () => {
+    if (!activeTrip) return;
+    try {
+      const trip = await tripService.startTrip(activeTrip.id);
+      setActiveTrip({ ...trip, status: 'in_progress' });
+      setOrderDetailsModalVisible(false);
+      openMaps(trip.dropoff_lat, trip.dropoff_lng);
+      Alert.alert('Trip Started', 'Navigate to dropoff location');
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to start trip');
     }
@@ -268,9 +307,26 @@ export default function HomeScreen() {
             </View>
             <TripCard
               trip={activeTrip}
-              onStart={handleStartTrip}
+              onStart={() => openMaps(activeTrip.pickup_lat, activeTrip.pickup_lng)}
               onEnd={() => setOtpModalVisible(true)}
             />
+            {activeTrip.status === 'accepted' && (
+              <View style={styles.tripActions}>
+                <TouchableOpacity
+                  style={styles.navigateButton}
+                  onPress={() => openMaps(activeTrip.pickup_lat, activeTrip.pickup_lng)}
+                >
+                  <Navigation size={20} color="#FFFFFF" />
+                  <Text style={styles.navigateButtonText}>Navigate to Pickup</Text>
+                </TouchableOpacity>
+                <Button
+                  title="Reached Pickup"
+                  onPress={handleReachedPickup}
+                  style={styles.reachedButton}
+                />
+              </View>
+            )}
+
             {activeTrip.status === 'in_progress' && (
               <View style={styles.tripActions}>
                 <TouchableOpacity
@@ -361,6 +417,42 @@ export default function HomeScreen() {
       </Modal>
 
       <Modal
+        visible={pickupOtpModalVisible}
+        onClose={() => setPickupOtpModalVisible(false)}
+        title="Verify Pickup OTP"
+      >
+        <Text style={styles.otpInstruction}>
+          Enter the 4-digit pickup OTP provided by the customer.
+        </Text>
+        <Input
+          label="Pickup OTP"
+          placeholder="Enter 4-digit OTP"
+          value={pickupOtp}
+          onChangeText={setPickupOtp}
+          keyboardType="number-pad"
+          maxLength={4}
+        />
+        <Button title="Verify & Continue" onPress={handleVerifyPickupOtp} />
+      </Modal>
+
+      <Modal
+        visible={orderDetailsModalVisible}
+        onClose={() => setOrderDetailsModalVisible(false)}
+        title="Enter Order Details"
+      >
+        <OrderDetailsInput
+          serviceType={activeTrip?.service_type || ''}
+          value={tempOrderDetails}
+          onChange={setTempOrderDetails}
+        />
+        <Button
+          title="Start Trip"
+          onPress={handleStartTrip}
+          style={{ marginTop: 16 }}
+        />
+      </Modal>
+
+      <Modal
         visible={otpModalVisible}
         onClose={() => setOtpModalVisible(false)}
         title="End Trip"
@@ -400,9 +492,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -450,18 +542,18 @@ const styles = StyleSheet.create({
   },
   quickStats: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 16,
   },
   quickStatCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -490,13 +582,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   sectionTitle: {
     fontSize: 20,
@@ -539,7 +632,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   tripActions: {
-    marginTop: 12,
+    marginTop: 16,
     gap: 12,
   },
   navigateButton: {
@@ -563,6 +656,10 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     width: '100%',
+  },
+  reachedButton: {
+    width: '100%',
+    marginTop: 12,
   },
   emptyState: {
     backgroundColor: '#FFFFFF',

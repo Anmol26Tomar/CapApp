@@ -1,6 +1,28 @@
 export type VehicleType = 'bike' | 'cab' | 'truck';
+export type VehicleSubtype =
+  | 'bike_standard'
+  | 'cab_sedan'
+  | 'cab_suv'
+  | 'cab_hatchback'
+  | 'truck_3wheeler'
+  | 'truck_mini_van'
+  | 'truck_pickup'
+  | 'truck_full_size';
 export type ServiceScope = 'intra_city' | 'inter_city';
-export type TripStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+export type TripStatus = 'pending' | 'accepted' | 'reached_pickup' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface OrderDetails {
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  packageType?: string;
+  fragile?: boolean;
+  specialInstructions?: string;
+  passengers?: number;
+}
 
 export interface Captain {
   id: string;
@@ -8,6 +30,7 @@ export interface Captain {
   phone: string;
   email: string;
   vehicle_type: VehicleType;
+  vehicle_subtype?: VehicleSubtype;
   service_scope: ServiceScope;
   is_available: boolean;
   rating: number;
@@ -30,6 +53,9 @@ export interface Trip {
   actual_fare?: number;
   status: TripStatus;
   otp?: string;
+  pickup_otp?: string;
+  pickup_otp_verified?: boolean;
+  order_details?: OrderDetails;
   cancel_reason?: string;
   started_at?: string;
   completed_at?: string;
@@ -63,6 +89,7 @@ export interface SignupData {
   phone: string;
   password: string;
   vehicle_type: VehicleType;
+  vehicle_subtype?: VehicleSubtype;
   service_scope: ServiceScope;
   confirm_Password:string;
   city: string;

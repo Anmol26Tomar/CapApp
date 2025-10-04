@@ -69,7 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         serviceType: data.service_scope,
         password: data.password,
         confirmPassword: data.confirm_Password,
+        vehicleSubType:data.vehicle_subtype,
       };
+      console.log(payload);
       await authService.signup(payload);
     } catch (error) {
       console.error('Signup failed:', error);

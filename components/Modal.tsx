@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   content: {
-    padding: 20,
+    padding: 24,
   },
 });

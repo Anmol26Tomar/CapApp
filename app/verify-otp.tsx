@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,24 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Button } from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/api';
+import axios from 'axios';
 
 export default function VerifyOTPScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const { verifyOTP } = useAuth();
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const inputRefs = useRef<TextInput[]>(Array(6).fill(null));
+
+  useEffect(() => {
+    if (!phone) {
+      Alert.alert('Error', 'No phone number provided');
+      router.back();
+    }
+  }, []);
 
   const handleOtpChange = (value: string, index: number) => {
     if (!/^\d*$/.test(value)) return;
@@ -31,6 +40,11 @@ export default function VerifyOTPScreen() {
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
+
+    // Optional: Auto-submit when all fields are filled
+    // if (value && index === 5 && newOtp.every(d => d !== '')) {
+    //   handleVerify();
+    // }
   };
 
   const handleKeyPress = (key: string, index: number) => {
@@ -50,11 +64,15 @@ export default function VerifyOTPScreen() {
     try {
       await verifyOTP({ phone: phone || '', otp: otpCode });
       router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert(
-        'Verification Failed',
-        error.response?.data?.message || 'Invalid OTP. Please try again.'
-      );
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        Alert.alert(
+          'Verification Failed',
+          error.response?.data?.message || 'Invalid OTP. Please try again.'
+        );
+      } else {
+        Alert.alert('Verification Failed', 'An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -69,11 +87,15 @@ export default function VerifyOTPScreen() {
       Alert.alert('Success', 'OTP has been resent to your phone');
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
-    } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Failed to resend OTP'
-      );
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        Alert.alert(
+          'Error',
+          error.response?.data?.message || 'Failed to resend OTP'
+        );
+      } else {
+        Alert.alert('Error', 'An unexpected error occurred.');
+      }
     } finally {
       setResending(false);
     }
@@ -92,14 +114,18 @@ export default function VerifyOTPScreen() {
           {otp.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => (inputRefs.current[index] = ref)}
+              ref={(ref) => (inputRefs.current[index] = ref!)}
               style={styles.otpInput}
               value={digit}
               onChangeText={(value) => handleOtpChange(value, index)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+              onKeyPress={({ nativeEvent }) =>
+                handleKeyPress(nativeEvent.key, index)
+              }
               keyboardType="number-pad"
               maxLength={1}
               selectTextOnFocus
+              importantForAccessibility="yes"
+              accessible
             />
           ))}
         </View>

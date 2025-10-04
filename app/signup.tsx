@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
-import type { VehicleType, ServiceScope } from '../types';
+import type { VehicleType, VehicleSubtype, ServiceScope } from '../types';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -27,9 +27,29 @@ export default function SignupScreen() {
     city: '',
   });
   const [vehicleType, setVehicleType] = useState<VehicleType>('bike');
+  const [vehicleSubtype, setVehicleSubtype] = useState<VehicleSubtype | undefined>(undefined);
   const [serviceScope, setServiceScope] = useState<ServiceScope>('intra_city');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const getSubtypeOptions = (): { value: VehicleSubtype; label: string }[] => {
+    if (vehicleType === 'truck') {
+      return [
+        { value: 'truck_3wheeler', label: '3 Wheeler' },
+        { value: 'truck_mini_van', label: 'Mini Van' },
+        { value: 'truck_pickup', label: 'Pickup Truck' },
+        { value: 'truck_full_size', label: 'Full Size' },
+      ];
+    }
+    if (vehicleType === 'cab') {
+      return [
+        { value: 'cab_sedan', label: 'Sedan' },
+        { value: 'cab_suv', label: 'SUV' },
+        { value: 'cab_hatchback', label: 'Hatchback' },
+      ];
+    }
+    return [{ value: 'bike_standard', label: 'Standard' }];
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -70,6 +90,7 @@ export default function SignupScreen() {
         phone: formData.phone,
         password: formData.password,
         vehicle_type: vehicleType,
+        vehicle_subtype: vehicleSubtype,
         service_scope: serviceScope,
         city: formData.city,
         confirm_Password:formData.confirmPassword
@@ -94,12 +115,34 @@ export default function SignupScreen() {
         styles.optionButton,
         vehicleType === type && styles.optionButtonActive,
       ]}
-      onPress={() => setVehicleType(type)}
+      onPress={() => {
+        setVehicleType(type);
+        setVehicleSubtype(undefined);
+      }}
     >
       <Text
         style={[
           styles.optionButtonText,
           vehicleType === type && styles.optionButtonTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const SubtypeButton = ({ subtype, label }: { subtype: VehicleSubtype; label: string }) => (
+    <TouchableOpacity
+      style={[
+        styles.subtypeButton,
+        vehicleSubtype === subtype && styles.subtypeButtonActive,
+      ]}
+      onPress={() => setVehicleSubtype(subtype)}
+    >
+      <Text
+        style={[
+          styles.optionButtonText,
+          vehicleSubtype === subtype && styles.optionButtonTextActive,
         ]}
       >
         {label}
@@ -185,6 +228,23 @@ export default function SignupScreen() {
               <VehicleButton type="truck" label="Truck" />
             </View>
           </View>
+
+          {(vehicleType === 'cab' || vehicleType === 'truck') && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>
+                {vehicleType === 'cab' ? 'Car Type' : 'Truck Type'}
+              </Text>
+              <View style={styles.subtypeGrid}>
+                {getSubtypeOptions().map((option) => (
+                  <SubtypeButton
+                    key={option.value}
+                    subtype={option.value}
+                    label={option.label}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Service Scope</Text>
@@ -272,6 +332,25 @@ const styles = StyleSheet.create({
   optionRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  subtypeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  subtypeButton: {
+    minWidth: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  subtypeButtonActive: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
   },
   optionButton: {
     flex: 1,

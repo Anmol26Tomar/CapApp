@@ -24,6 +24,7 @@ export const TripCard: React.FC<TripCardProps> = ({
     switch (trip.status) {
       case 'pending': return { bg: '#FEF3C7', text: '#F59E0B' };
       case 'accepted': return { bg: '#DBEAFE', text: '#2563EB' };
+      case 'reached_pickup': return { bg: '#FDE68A', text: '#D97706' };
       case 'in_progress': return { bg: '#D1FAE5', text: '#10B981' };
       default: return { bg: '#E5E7EB', text: '#6B7280' };
     }
